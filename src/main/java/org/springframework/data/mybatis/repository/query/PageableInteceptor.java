@@ -157,7 +157,12 @@ public class PageableInteceptor implements Interceptor {
         return sql;
     }
     
-    private static String buildSortFragment(Sort sort) {
+    /**
+     * Construct "order by" sql fragment for {@link Sort}, column name will be prefixed with "o." automatically.
+     * @param sort Sort object
+     * @return "order by" sql fragment
+     */
+    public static String buildSortFragment(Sort sort) {
         if (sort != null && sort.isSorted()) {
             Iterator<Order> orderIter = sort.iterator();
             List<String> sorts = new ArrayList<>();

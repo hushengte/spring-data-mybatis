@@ -2,7 +2,6 @@ package org.springframework.data.mybatis.repository;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -17,13 +16,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Order;
+import org.springframework.data.mybatis.repository.query.PageableInteceptor;
 import org.springframework.data.mybatis.repository.support.MybatisRepositoryConfigurer;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 @NoRepositoryBean
 @Transactional(readOnly = true)
@@ -101,26 +99,9 @@ public interface MybatisRepository<T extends Persistable<ID>, ID> extends Paging
     @Override
     default List<T> findAll(Sort sort) {
         if (sort != null) {
-            return findWithSort(table(), orderByFragment(sort));
+            return findWithSort(table(), PageableInteceptor.buildSortFragment(sort));
         }
         return findAll();
-    }
-    
-    static String orderByFragment(Sort sort) {
-        if (sort != null && sort.isSorted()) {
-            Iterator<Order> orderIter = sort.iterator();
-            List<String> sorts = new ArrayList<>();
-            while (orderIter.hasNext()) {
-                Order order = orderIter.next();
-                StringBuilder sortBuf = new StringBuilder();
-                sortBuf.append("o.").append(order.getProperty()).append(" ").append(order.getDirection().name());
-                sorts.add(sortBuf.toString());
-            }
-            if (sorts.size() > 0) {
-                return StringUtils.collectionToCommaDelimitedString(sorts);
-            }
-        }
-        return "";
     }
     
     @Override
