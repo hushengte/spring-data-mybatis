@@ -71,6 +71,7 @@
 			<groupId>javax.persistence</groupId>
 			<artifactId>javax.persistence-api</artifactId>
 			<version>${jpa-api.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>

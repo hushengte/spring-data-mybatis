@@ -52,8 +52,7 @@ public class MybatisRepositoryFactory extends RepositoryFactorySupport {
     protected Object getTargetRepository(RepositoryInformation repositoryInformation) {
         Class<?> mapperClass = repositoryInformation.getRepositoryInterface();
         org.apache.ibatis.session.Configuration config = sqlSessionFactory.getConfiguration();
-        String namespace = mapperClass.getName();
-        MybatisRepositoryConfigurer.configure(config, namespace, repositoryInformation.getDomainType());
+        MybatisRepositoryConfigurer.configure(config, mapperClass, repositoryInformation.getDomainType());
         
         MapperFactoryBean<?> mapperFactoryBean = new MapperFactoryBean<>(mapperClass);
         mapperFactoryBean.setSqlSessionFactory(sqlSessionFactory);

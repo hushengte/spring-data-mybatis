@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,14 +30,22 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.GenericTypeResolver;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.domain.Persistable;
+import org.springframework.data.mapping.MappingException;
 import org.springframework.data.mybatis.repository.MybatisRepository;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 public class MybatisRepositoryConfigurer extends MapperScannerConfigurer {
     
     private static final Logger logger = LoggerFactory.getLogger(MybatisRepositoryConfigurer.class);
+    
+    private static final boolean JPA_API_PRESENT = ClassUtils.isPresent("javax.persistence.Table", 
+            MybatisRepositoryConfigurer.class.getClassLoader());
+    private static final Map<Class<?>, String> REPOSITORY_CLASS_TO_TABLE_MAP = new HashMap<>();
     
     public MybatisRepositoryConfigurer() {
         // set to false to avoid adding mappers to mybatis configuration, 
@@ -69,7 +78,7 @@ public class MybatisRepositoryConfigurer extends MapperScannerConfigurer {
             Class<?> mapperClass = loadMapperClass(mapperClassName);
             if (mapperClass != baseMapperClass) {
                 Class<?> entityType = GenericTypeResolver.resolveTypeArguments(mapperClass, baseMapperClass)[0];
-                configure(configuration, mapperClassName, entityType);
+                configure(configuration, mapperClass, entityType);
                 configuration.addMapper(mapperClass);
             }
         }
@@ -81,15 +90,61 @@ public class MybatisRepositoryConfigurer extends MapperScannerConfigurer {
      * so that "default resultMaps" registered by this method can be used by query method resolving.
      * 
      * @param configuration mybatis configuration
-     * @param namespace namespace of the Mapper
+     * @param repositoryClass {@link MybatisRepository} subclass
      * @param entityType Domain class of Mapper
      */
     public static void configure(org.apache.ibatis.session.Configuration configuration, 
-            String namespace, Class<?> entityType) {
+            Class<?> repositoryClass, Class<?> entityType) {
+        // mapping table name
+        REPOSITORY_CLASS_TO_TABLE_MAP.put(repositoryClass, resolveTableName(entityType));
+        
+        String namespace = repositoryClass.getName();
         // add insert and update statement
         addInsertStatement(configuration, namespace, entityType);
         addUpdateStatement(configuration, namespace, entityType);
+        
+        // add default resultMap for entityType
         addDefaultResultMap(configuration, namespace, entityType);
+    }
+    
+    /**
+     * Get table name for a given repository class
+     * @param repositoryClass A MybatisRepository subclass
+     * @return Table name
+     */
+    public static String getTable(Class<?> repositoryClass) {
+        String table = REPOSITORY_CLASS_TO_TABLE_MAP.get(selectRepositoryClass(repositoryClass));
+        if (table == null) {
+            throw new IllegalArgumentException("There is no table for the repository class: " + repositoryClass.getName());
+        }
+        return table;
+    }
+    
+    private static Class<?> selectRepositoryClass(Class<?> repositoryClass) {
+        Class<?>[] interfaceClasses = repositoryClass.getInterfaces();
+        for (Class<?> interfaceClass : interfaceClasses) {
+            if (MybatisRepository.class.isAssignableFrom(interfaceClass) 
+                    && interfaceClass != MybatisRepository.class) {
+                return interfaceClass;
+            }
+        }
+        return repositoryClass;
+    }
+    
+    private static String resolveTableName(Class<?> entityType) {
+        Table table = AnnotationUtils.findAnnotation(entityType, Table.class);
+        if (table != null) {
+            return table.value();
+        }
+        if (JPA_API_PRESENT) {
+            javax.persistence.Table jpaTable = AnnotationUtils.findAnnotation(entityType, javax.persistence.Table.class);
+            if (jpaTable != null) {
+                return jpaTable.name();
+            }
+        }
+        String message = String.format("Entity %s must be annotated with @%s or @%s", 
+                entityType.getName(), Table.class.getName(), javax.persistence.Table.class.getName());
+        throw new MappingException(message);
     }
     
     private static void addDefaultResultMap(org.apache.ibatis.session.Configuration config,

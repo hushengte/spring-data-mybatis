@@ -2,28 +2,23 @@ package org.springframework.data.mybatis.repository;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import javax.persistence.Table;
 
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.ResultType;
 import org.apache.ibatis.annotations.Select;
-import org.springframework.core.GenericTypeResolver;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
+import org.springframework.data.mybatis.repository.support.MybatisRepositoryConfigurer;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,23 +34,9 @@ public interface MybatisRepository<T extends Persistable<ID>, ID> extends Paging
     String SCRIPT_END = "</script>";
     String FOREACH_ITEMS = "<foreach item='item' collection='items' open='(' separator=',' close=')'>#{item}</foreach>";
     
-    Map<Class<?>, String> TABLE_MAP = new HashMap<>();
-    
     default String table() {
         Class<?> repositoryClass = getClass();
-        String tableName = TABLE_MAP.get(repositoryClass);
-        if (tableName == null) {
-            Class<?> entityType = GenericTypeResolver.resolveTypeArguments(repositoryClass, MybatisRepository.class)[0];
-            Table table = AnnotationUtils.findAnnotation(entityType, Table.class);
-            if (table == null) {
-                String message = String.format("Entity %s must be annotated with @javax.persistence.Table", 
-                        entityType.getName());
-                throw new IllegalStateException(message);
-            }
-            tableName = table.name();
-            TABLE_MAP.put(repositoryClass, tableName);
-        }
-        return tableName;
+        return MybatisRepositoryConfigurer.getTable(repositoryClass);
     }
     
     @Select("select o.* from ${table} o where o.id = #{id}")
