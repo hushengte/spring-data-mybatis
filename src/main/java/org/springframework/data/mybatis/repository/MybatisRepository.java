@@ -35,6 +35,10 @@ import org.springframework.util.StringUtils;
 public interface MybatisRepository<T extends Persistable<ID>, ID> extends PagingAndSortingRepository<T, ID> {
     
     String DEFAULT_RESULTMAP = "defaultResultMap";
+    String SCRIPT_BEGIN = "<script>";
+    String SCRIPT_END = "</script>";
+    String FOREACH_ITEMS = "<foreach item='item' collection='items' open='(' separator=',' close=')'>#{item}</foreach>";
+    
     Map<Class<?>, String> TABLE_MAP = new HashMap<>();
     
     default String table() {
@@ -66,9 +70,9 @@ public interface MybatisRepository<T extends Persistable<ID>, ID> extends Paging
     @ResultMap(DEFAULT_RESULTMAP)
     List<T> findWithSort(@Param("table") String table, @Param("sorts") String sorts);
     
-    @Select("select o.* from ${table} o where o.id in (${id})")
+    @Select(SCRIPT_BEGIN + "select o.* from ${table} o where o.id in " + FOREACH_ITEMS + SCRIPT_END)
     @ResultMap(DEFAULT_RESULTMAP)
-    List<T> findByIds(@Param("table") String table, @Param("ids") String ids);
+    List<T> findByIds(@Param("table") String table, @Param("items") Iterable<ID> ids);
     
     @Select("select * from ${table}")
     @ResultMap(DEFAULT_RESULTMAP)
@@ -93,8 +97,8 @@ public interface MybatisRepository<T extends Persistable<ID>, ID> extends Paging
     int deleteById(@Param("table") String table, @Param("id") ID id);
     
     @Transactional
-    @Delete("delete from ${table} where id in (${ids})")
-    int deleteByIds(@Param("table") String table, @Param("ids") String ids);
+    @Delete(SCRIPT_BEGIN + "delete from ${table} where id in " + FOREACH_ITEMS + SCRIPT_END)
+    int deleteByIds(@Param("table") String table, @Param("items") Iterable<ID> ids);
     
     @Transactional
     @Delete(value = "delete from ${table}")
@@ -116,12 +120,12 @@ public interface MybatisRepository<T extends Persistable<ID>, ID> extends Paging
     @Override
     default List<T> findAll(Sort sort) {
         if (sort != null) {
-            return findWithSort(table(), getSqlFragment(sort));
+            return findWithSort(table(), orderByFragment(sort));
         }
         return findAll();
     }
     
-    static String getSqlFragment(Sort sort) {
+    static String orderByFragment(Sort sort) {
         if (sort != null && sort.isSorted()) {
             Iterator<Order> orderIter = sort.iterator();
             List<String> sorts = new ArrayList<>();
@@ -148,11 +152,7 @@ public interface MybatisRepository<T extends Persistable<ID>, ID> extends Paging
         if (ids == null || !ids.iterator().hasNext()) {
             return Collections.emptyList();
         }
-        List<ID> idList = new ArrayList<>();
-        for (ID id : ids) {
-            idList.add(id);
-        }
-        return findByIds(table(), StringUtils.collectionToCommaDelimitedString(idList));
+        return findByIds(table(), ids);
     }
     
     @Override
@@ -220,7 +220,7 @@ public interface MybatisRepository<T extends Persistable<ID>, ID> extends Paging
             }
         }
         if (ids.size() > 0) {
-            deleteByIds(table(), StringUtils.collectionToCommaDelimitedString(ids));
+            deleteByIds(table(), ids);
         }
     }
     
