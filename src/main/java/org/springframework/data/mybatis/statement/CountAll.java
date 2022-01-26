@@ -27,7 +27,7 @@ class CountAll extends AbstractStatement {
     public String renderSql(RenderContext renderContext, TableInfo tableInfo) {
         Select select = StatementBuilder
                 .select(Functions.count(Expressions.asterisk()))
-                .from(tableInfo.getTable())
+                .from(tableInfo.getAliasedTable())
                 .build();
         return SqlRenderer.create(renderContext).render(select);
     }

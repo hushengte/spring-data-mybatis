@@ -5,17 +5,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mapping.context.MappingContext;
-import org.springframework.data.relational.core.mapping.PersistentPropertyPathExtension;
 import org.springframework.data.relational.core.mapping.RelationalPersistentEntity;
 import org.springframework.data.relational.core.mapping.RelationalPersistentProperty;
 import org.springframework.data.relational.core.sql.Column;
 import org.springframework.data.relational.core.sql.SqlIdentifier;
 import org.springframework.data.relational.core.sql.Table;
+import org.springframework.util.StringUtils;
 
 public class TableInfo {
     
@@ -35,23 +36,50 @@ public class TableInfo {
         this.aliasedTable = this.table.as(DEFAULT_TABLE_ALIAS);
     }
     
+    /**
+     * Transform a "camelcase" name as "underscore" name
+     * @param name the original name
+     * @return underscored name
+     */
+    public static String underscoreName(String name) {
+        if (!StringUtils.hasLength(name)) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder();
+        result.append(lowerCaseName(name.substring(0, 1)));
+        for (int i = 1; i < name.length(); i++) {
+            String s = name.substring(i, i + 1);
+            String slc = lowerCaseName(s);
+            if (!s.equals(slc)) {
+                result.append("_").append(slc);
+            }
+            else {
+                result.append(s);
+            }
+        }
+        return result.toString();
+    }
+    
+    private static String lowerCaseName(String name) {
+        return name.toLowerCase(Locale.US);
+    }
+    
     public static TableInfo create(MappingContext<RelationalPersistentEntity<?>, RelationalPersistentProperty> mappingContext,
-            Class<?> domainType) {
+            Class<?> domainType, boolean underscoreColumn) {
         
         RelationalPersistentEntity<?> entity = mappingContext.getRequiredPersistentEntity(domainType);
         TableInfo info = new TableInfo(entity.getTableName());
         entity.doWithProperties((PropertyHandler<RelationalPersistentProperty>) property -> {
-            // the referencing column of referenced entity is expected to be on the other side of the relation
-            if (!property.isEntity()) {
-                initSimpleColumnName(info, property, "");
-            } else if (property.isEntity()) {
-                PersistentPropertyPathExtension extPath = new PersistentPropertyPathExtension(mappingContext, 
-                        mappingContext.getPersistentEntity(property.getActualType()));
-                if (extPath.hasIdProperty()) {
-                    String propertyPrefix = property.getName() + "_";
-                    SqlIdentifier columnName = extPath.getIdColumnName().transform(propertyPrefix::concat);
-                    info.nonIdColumnNames.add(columnName);
+            if (property.isEntity()) {
+                RelationalPersistentEntity<?> propertyEntity = mappingContext.getPersistentEntity(property.getActualType());
+                RelationalPersistentProperty propertyEntityId = propertyEntity.getIdProperty();
+                if (propertyEntityId != null) {
+                    String propertyColumn = underscoreColumn ? underscoreName(property.getName()) : property.getName();
+                    String prefix = propertyColumn + "_";
+                    initSimpleColumnName(info, propertyEntityId, prefix);
                 }
+            } else {
+                initSimpleColumnName(info, property, "");
             }
         });
         
@@ -72,7 +100,11 @@ public class TableInfo {
         SqlIdentifier columnName = property.getColumnName().transform(prefix::concat);
         
         if (property.getOwner().isIdProperty(property)) {
-            tableInfo.idColumnName = columnName;
+            if (StringUtils.hasText(prefix)) {
+                tableInfo.nonIdColumnNames.add(columnName);
+            } else {
+                tableInfo.idColumnName = columnName;
+            }
         } else {
             tableInfo.nonIdColumnNames.add(columnName);
         }
@@ -104,6 +136,12 @@ public class TableInfo {
     public List<Column> getColumns() {
         return columnNames.stream()
                 .map(columnName -> table.column(columnName))
+                .collect(Collectors.toList());
+    }
+    
+    public List<Column> getAliasedColumns() {
+        return columnNames.stream()
+                .map(columnName -> aliasedTable.column(columnName))
                 .collect(Collectors.toList());
     }
     

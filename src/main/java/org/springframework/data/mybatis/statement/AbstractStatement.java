@@ -11,6 +11,8 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.scripting.xmltags.DynamicSqlSource;
 import org.apache.ibatis.scripting.xmltags.TextSqlNode;
 import org.apache.ibatis.session.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.relational.core.sql.BindMarker;
 import org.springframework.data.relational.core.sql.SQL;
 import org.springframework.data.relational.core.sql.SqlIdentifier;
@@ -21,6 +23,8 @@ import org.springframework.util.Assert;
  * Base class for generate a {@link MappedStatement}
  */
 public abstract class AbstractStatement implements Statement {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AbstractStatement.class);
     
     private static final Pattern NON_VISIBLE_CHAR_PATTERN = Pattern.compile("\\W");
     
@@ -58,6 +62,9 @@ public abstract class AbstractStatement implements Statement {
     public MappedStatement create(Configuration config, String namespace, RenderContext renderContext, TableInfo tableInfo) {
         String id = statementId(namespace);
         String sqlScript = renderSql(renderContext, tableInfo);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Rendered SQL: {}", sqlScript);
+        }
         SqlSource sqlSource = createSqlSource(config, sqlScript);
         MappedStatement.Builder builder = new MappedStatement.Builder(config, id, sqlSource, this.getType());
         configureBuilder(config, namespace, builder);

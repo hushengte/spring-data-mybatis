@@ -26,8 +26,8 @@ class CountById extends AbstractStatement {
      */
     @Override
     public String renderSql(RenderContext renderContext, TableInfo tableInfo) {
-        Table table = tableInfo.getTable();
-        Column idColumn = tableInfo.getIdColumn();
+        Table table = tableInfo.getAliasedTable();
+        Column idColumn = table.column(tableInfo.getIdColumnName());
         Select select = StatementBuilder
                 .select(Functions.count(idColumn))
                 .from(table)

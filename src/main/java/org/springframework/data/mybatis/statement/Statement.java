@@ -28,7 +28,7 @@ public interface Statement {
     String DOT = ".";
     String COMMA = ",";
     
-    String RESULTMAP_DEFAULT = "defaultResultMap";
+    String RESULTMAP_DEFAULT = "resultMap[default]";
     
     String SCRIPT_BEGIN = "<script>";
     String SCRIPT_END = "</script>";

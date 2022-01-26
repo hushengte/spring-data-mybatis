@@ -20,8 +20,8 @@ class FindAll extends AbstractStatement {
      */
     @Override
     public String renderSql(RenderContext renderContext, TableInfo tableInfo) {
-        Select select = StatementBuilder.select(tableInfo.getColumns())
-                .from(tableInfo.getTable())
+        Select select = StatementBuilder.select(tableInfo.getAliasedColumns())
+                .from(tableInfo.getAliasedTable())
                 .build();
         return SqlRenderer.create(renderContext).render(select);
     }

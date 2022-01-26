@@ -1,15 +1,10 @@
 package org.springframework.data.mybatis.statement;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultFlag;
@@ -18,15 +13,15 @@ import org.apache.ibatis.mapping.ResultMapping;
 import org.apache.ibatis.session.AutoMappingBehavior;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Persistable;
+import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mybatis.repository.MybatisRepository;
 import org.springframework.data.mybatis.repository.support.SimpleMybatisRepository;
 import org.springframework.data.relational.core.dialect.Dialect;
 import org.springframework.data.relational.core.dialect.RenderContextFactory;
 import org.springframework.data.relational.core.mapping.RelationalMappingContext;
+import org.springframework.data.relational.core.mapping.RelationalPersistentEntity;
+import org.springframework.data.relational.core.mapping.RelationalPersistentProperty;
 import org.springframework.data.relational.core.sql.render.RenderContext;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * Utility class to configure implementations of {@link org.springframework.data.mybatis.statement.Statement}
@@ -54,9 +49,9 @@ public class Statements {
             RelationalMappingContext mappingContext, Dialect dialect) {
         
         String namespace = repositoryType.getName();
-        configureDefaultResultMap(config, namespace, domainType);
+        configureDefaultResultMap(config, namespace, mappingContext, domainType);
         
-        TableInfo tableInfo = TableInfo.create(mappingContext, domainType);
+        TableInfo tableInfo = TableInfo.create(mappingContext, domainType, config.isMapUnderscoreToCamelCase());
         RenderContext renderContext = new RenderContextFactory(dialect).createRenderContext();
         List<AbstractStatement> defaultStatements = Arrays.asList(
                 new org.springframework.data.mybatis.statement.Insert(),
@@ -82,90 +77,60 @@ public class Statements {
         });
     }
     
-    public static void configureDefaultResultMap(org.apache.ibatis.session.Configuration config,
-            String namespace, Class<?> entityType) {
-        String id = namespace + Statement.DOT + Statement.RESULTMAP_DEFAULT;
-        String nestedResultMapIdPrefix = ".mapper_resultMap[default]";
-        buildResultMap(config, namespace, id, nestedResultMapIdPrefix, entityType, new ArrayDeque<>());
+    public static void configureDefaultResultMap(org.apache.ibatis.session.Configuration config, String namespace, 
+            RelationalMappingContext mappingContext, Class<?> domainType) {
+        String nestedResultMapIdPrefix = Statement.DOT + Statement.RESULTMAP_DEFAULT;
+        String defaultResultMapId = namespace + Statement.DOT + Statement.RESULTMAP_DEFAULT;
+        buildDefaultResultMap(config, namespace, defaultResultMapId, nestedResultMapIdPrefix, mappingContext, domainType, new ArrayDeque<>());
     }
     
-    private static ResultMap buildResultMap(org.apache.ibatis.session.Configuration config,
-            String namespace, String id, String nestedResultMapIdPrefix, 
-            Class<?> entityType, Deque<Class<?>> enclosingClassStack) {
+    private static String bracket(String name) {
+        return new StringBuilder("[").append(name).append("]").toString();
+    }
+    
+    private static ResultMap buildDefaultResultMap(org.apache.ibatis.session.Configuration config,
+            String namespace, String defaultResultMapId, String nestedResultMapIdPrefix, 
+            RelationalMappingContext mappingContext, Class<?> domainType, Deque<Class<?>> enclosingClassStack) {
+        
+        RelationalPersistentEntity<?> entity = mappingContext.getRequiredPersistentEntity(domainType);
         boolean underscoreColumn = config.isMapUnderscoreToCamelCase();
         List<ResultMapping> mappings = new ArrayList<>();
-        ReflectionUtils.doWithFields(entityType, field -> {
-            Class<?> fieldType = field.getType();
-            if (isMappingField(field, fieldType)) {
-                String propertyName = field.getName();
-                boolean isBaseEntity = Persistable.class.isAssignableFrom(fieldType);
-                String column = underscoreColumn ? underscoreName(propertyName) : propertyName;
-                ResultMapping.Builder mappingBuilder = new ResultMapping.Builder(config, 
-                        propertyName, column, fieldType);
-                if (isBaseEntity) {
-                    if (enclosingClassStack.contains(fieldType)) {
-                        logger.info("Circular entity graph detected, skipping entityType: {}", fieldType.getName());
-                    } else {
-                        StringBuilder idPrefix = new StringBuilder(nestedResultMapIdPrefix);
-                        idPrefix.append("_association[").append(propertyName).append("]");
-                        String nestedResultMapId = namespace + idPrefix.toString();
-                        enclosingClassStack.push(entityType);
-                        ResultMap resultMap = buildResultMap(config, namespace, nestedResultMapId, idPrefix.toString(), 
-                                fieldType, enclosingClassStack);
-                        mappingBuilder.nestedResultMapId(resultMap.getId());
-                        mappingBuilder.columnPrefix(column + "_");
-                        mappings.add(mappingBuilder.build());
-                    }
+        
+        entity.doWithProperties((PropertyHandler<RelationalPersistentProperty>) property -> {
+            Class<?> propertyType = property.getActualType();
+            String propertyName = property.getName();
+            String column = underscoreColumn ? TableInfo.underscoreName(propertyName) : propertyName;
+            ResultMapping.Builder mappingBuilder = new ResultMapping.Builder(config, propertyName, column, propertyType);
+            if (property.isEntity()) {
+                if (enclosingClassStack.contains(propertyType)) {
+                    logger.info("Circular entity graph detected, skipping entityType: {}", propertyType.getName());
                 } else {
-                    if ("id".equals(propertyName)) {
-                        mappingBuilder.flags(Arrays.asList(ResultFlag.ID));
-                    }
+                    StringBuilder nestedResultMapIdPrefixBuilder = new StringBuilder(nestedResultMapIdPrefix);
+                    nestedResultMapIdPrefixBuilder.append(bracket(propertyName));
+                    String nestedResultMapId = namespace + nestedResultMapIdPrefixBuilder.toString();
+                    enclosingClassStack.push(domainType);
+                    ResultMap resultMap = buildDefaultResultMap(config, namespace, nestedResultMapId, nestedResultMapIdPrefixBuilder.toString(), 
+                            mappingContext, propertyType, enclosingClassStack);
+                    mappingBuilder.nestedResultMapId(resultMap.getId());
+                    mappingBuilder.columnPrefix(column + "_");
                     mappings.add(mappingBuilder.build());
                 }
+            } else {
+                if (property.isIdProperty()) {
+                    mappingBuilder.flags(Arrays.asList(ResultFlag.ID));
+                }
+                mappings.add(mappingBuilder.build());
             }
         });
+        
         Class<?> enclosingType = enclosingClassStack.pollFirst();
-        String resultMapId = enclosingType == null ? id : namespace + nestedResultMapIdPrefix;
+        String resultMapId = enclosingType == null ? defaultResultMapId : namespace + nestedResultMapIdPrefix;
         Boolean autoMapping = enclosingType == null ? true : AutoMappingBehavior.FULL.equals(config.getAutoMappingBehavior());
-        ResultMap resultMap = new ResultMap.Builder(config, resultMapId, entityType, mappings, autoMapping).build();
+        
+        logger.info("Building default resultMap: domainType={}, resultMapId={}", domainType.getName(), resultMapId);
+        ResultMap resultMap = new ResultMap.Builder(config, resultMapId, domainType, mappings, autoMapping).build();
         config.addResultMap(resultMap);
         return resultMap;
-    }
-    
-    private static boolean isMappingField(Field field, Class<?> fieldType) {
-        if (Modifier.isStatic(field.getModifiers())) {
-            return false;
-        }
-        if (Collection.class.isAssignableFrom(fieldType)) {
-            return false;
-        }
-        if (Map.class.isAssignableFrom(fieldType)) {
-            return false;
-        }
-        return true;
-    }
-    
-    private static String underscoreName(String name) {
-        if (!StringUtils.hasLength(name)) {
-            return "";
-        }
-        StringBuilder result = new StringBuilder();
-        result.append(lowerCaseName(name.substring(0, 1)));
-        for (int i = 1; i < name.length(); i++) {
-            String s = name.substring(i, i + 1);
-            String slc = lowerCaseName(s);
-            if (!s.equals(slc)) {
-                result.append("_").append(slc);
-            }
-            else {
-                result.append(s);
-            }
-        }
-        return result.toString();
-    }
-    
-    private static String lowerCaseName(String name) {
-        return name.toLowerCase(Locale.US);
     }
     
 }

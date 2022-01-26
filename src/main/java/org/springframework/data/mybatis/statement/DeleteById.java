@@ -20,8 +20,8 @@ class DeleteById extends AbstractStatement {
      */
     @Override
     public String renderSql(RenderContext renderContext, TableInfo tableInfo) {
-        Table table = tableInfo.getTable();
-        Column idColumn = tableInfo.getIdColumn();
+        Table table = tableInfo.getAliasedTable();
+        Column idColumn = table.column(tableInfo.getIdColumnName());
         Delete delete = Delete.builder()
                 .from(table)
                 .where(idColumn.isEqualTo(getBindMarker(tableInfo.getIdColumnName())))

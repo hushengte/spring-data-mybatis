@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.sql.Column;
 import org.springframework.data.relational.core.sql.LockMode;
 import org.springframework.data.relational.core.sql.Select;
 import org.springframework.data.relational.core.sql.StatementBuilder;
+import org.springframework.data.relational.core.sql.Table;
 import org.springframework.data.relational.core.sql.render.RenderContext;
 import org.springframework.data.relational.core.sql.render.SqlRenderer;
 
@@ -26,10 +27,11 @@ class ReadLockById extends AbstractStatement {
      */
     @Override
     public String renderSql(RenderContext renderContext, TableInfo tableInfo) {
-        Column idColumn = tableInfo.getIdColumn();
+        Table table = tableInfo.getAliasedTable();
+        Column idColumn = table.column(tableInfo.getIdColumnName());
         Select select = StatementBuilder
             .select(idColumn)
-            .from(tableInfo.getTable())
+            .from(table)
             .where(idColumn.isEqualTo(getBindMarker(tableInfo.getIdColumnName())))
             .lock(LockMode.PESSIMISTIC_READ)
             .build();

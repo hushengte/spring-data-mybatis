@@ -7,7 +7,6 @@ import org.apache.ibatis.mapping.SqlCommandType;
 import org.springframework.data.relational.core.sql.AssignValue;
 import org.springframework.data.relational.core.sql.Assignments;
 import org.springframework.data.relational.core.sql.Column;
-import org.springframework.data.relational.core.sql.SqlIdentifier;
 import org.springframework.data.relational.core.sql.Table;
 import org.springframework.data.relational.core.sql.Update;
 import org.springframework.data.relational.core.sql.render.RenderContext;
@@ -26,8 +25,8 @@ class UpdateById extends AbstractStatement {
      */
     @Override
     public String renderSql(RenderContext renderContext, TableInfo tableInfo) {
-        Table table = tableInfo.getTable();
-        Column idColumn = tableInfo.getIdColumn();
+        Table table = tableInfo.getAliasedTable();
+        Column idColumn = table.column(tableInfo.getIdColumnName());
         List<AssignValue> assignments = tableInfo.getUpdateableColumns().stream()
                 .map(columnName -> {
                     return Assignments.value(table.column(columnName), getBindMarker(columnName));
@@ -35,7 +34,7 @@ class UpdateById extends AbstractStatement {
         Update update = Update.builder()
                 .table(table)
                 .set(assignments)
-                .where(idColumn.isEqualTo(getBindMarker(SqlIdentifier.unquoted("id"))))
+                .where(idColumn.isEqualTo(getBindMarker(tableInfo.getIdColumnName())))
                 .build();
         return SqlRenderer.create(renderContext).render(update);
     }
