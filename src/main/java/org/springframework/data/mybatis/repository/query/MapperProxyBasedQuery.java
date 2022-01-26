@@ -16,7 +16,6 @@ public class MapperProxyBasedQuery extends AbstractMybatisQuery {
      * Creates a new {@link MapperProxyBasedQuery}
      * 
      * @param queryMethod must not be {@literal null}.
-     * @param sqlSessionTemplate must not be {@literal null}.
      * @param mapperProxyTarget must not be {@literal null}.
      */
     public MapperProxyBasedQuery(MybatisQueryMethod queryMethod, Object mapperProxyTarget) {

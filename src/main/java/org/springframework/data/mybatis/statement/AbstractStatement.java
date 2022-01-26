@@ -56,8 +56,11 @@ public abstract class AbstractStatement implements Statement {
     
     /**
      * Create a {@link MappedStatement}.
-     *
-     * @return a {@link MappedStatement} for mybatis.
+     * @param config mybatis config
+     * @param namespace namespace for repository
+     * @param renderContext sql render contenxt
+     * @param tableInfo table info
+     * @return {@link MappedStatement}
      */
     public MappedStatement create(Configuration config, String namespace, RenderContext renderContext, TableInfo tableInfo) {
         String id = statementId(namespace);
@@ -77,7 +80,8 @@ public abstract class AbstractStatement implements Statement {
     
     /**
      * Create a sql statement.
-     *
+     * @param renderContext sql render contenxt
+     * @param tableInfo table info
      * @return the statement as a {@link String}. Guaranteed to be not {@literal null}.
      */
     public abstract String renderSql(RenderContext renderContext, TableInfo tableInfo);
