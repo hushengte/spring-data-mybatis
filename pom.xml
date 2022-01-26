@@ -26,15 +26,13 @@
 	</scm>
 
 	<properties>
-		<spring.version>5.2.12.RELEASE</spring.version>
-		<spring-data-commons.version>2.3.6.RELEASE</spring-data-commons.version>
-		<spring-data-relational.version>2.0.6.RELEASE</spring-data-relational.version>
-		<mybatis.version>3.5.6</mybatis.version>
-		<mybatis-spring.version>2.0.6</mybatis-spring.version>
-		<jpa-api.version>2.2</jpa-api.version>
+        <spring.version>5.2.12.RELEASE</spring.version>
+        <spring-data-relational.version>2.0.6.RELEASE</spring-data-relational.version>
+        <mybatis.version>3.5.9</mybatis.version>
+        <mybatis-spring.version>2.0.6</mybatis-spring.version>
 
-		<logback.version>1.2.3</logback.version>
-		<h2.version>1.4.200</h2.version>
+        <logback.version>1.2.3</logback.version>
+        <h2.version>1.4.200</h2.version>
 	</properties>
 
 	<repositories>
@@ -45,17 +43,16 @@
 	</repositories>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-commons</artifactId>
-			<version>${spring-data-commons.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-relational</artifactId>
-			<version>${spring-data-relational.version}</version>
-		</dependency>
-
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-relational</artifactId>
+            <version>${spring-data-relational.version}</version>
+        </dependency>
 		<dependency>
 			<groupId>org.mybatis</groupId>
 			<artifactId>mybatis</artifactId>
@@ -66,24 +63,11 @@
 			<artifactId>mybatis-spring</artifactId>
 			<version>${mybatis-spring.version}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>javax.persistence</groupId>
-			<artifactId>javax.persistence-api</artifactId>
-			<version>${jpa-api.version}</version>
-			<optional>true</optional>
-		</dependency>
-
+        
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>${logback.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
-			<version>${spring.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
