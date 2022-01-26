@@ -1,30 +1,21 @@
 package org.springframework.data.mybatis.domain;
 
+import java.io.Serializable;
+
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
 
-public class IntId implements Persistable<Integer> {
-
-    public static final String TABLE_GENERATOR_NAME = "id_increment_generator";
-    
-    private Integer id;
-    
-    @Override
-    public Integer getId() {
-        return id;
-    }
-    
-    public void setId(Integer id) {
-        this.id = id;
-    }
+/**
+ * Abstract base class for {@link Persistable} entities.
+ *
+ * @param <ID> the type of the identifier.
+ */
+public abstract class AbstractPersistable<ID extends Serializable> implements Persistable<ID> {
 
     @Override
+    @Transient
     public boolean isNew() {
-        return id == null;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("Entity of type %s with id: %s", this.getClass().getName(), getId());
+        return getId() == null;
     }
 
     @Override
@@ -38,7 +29,7 @@ public class IntId implements Persistable<Integer> {
         if (!getClass().equals(obj.getClass())) {
             return false;
         }
-        IntId that = (IntId) obj;
+        AbstractPersistable<?> that = (AbstractPersistable<?>) obj;
         return null == this.getId() ? false : this.getId().equals(that.getId());
     }
 
@@ -47,6 +38,11 @@ public class IntId implements Persistable<Integer> {
         int hashCode = 17;
         hashCode += null == getId() ? 0 : getId().hashCode() * 31;
         return hashCode;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("Entity of type %s with id: %s", this.getClass().getName(), getId());
     }
     
 }

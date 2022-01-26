@@ -1,7 +1,9 @@
 package org.springframework.data.mybatis.repository.support;
 
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.mybatis.spring.mapper.MapperFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.data.mybatis.statement.Statements;
+import org.springframework.data.relational.core.dialect.Dialect;
 import org.springframework.data.relational.core.mapping.RelationalMappingContext;
 import org.springframework.data.relational.core.mapping.RelationalPersistentEntity;
 import org.springframework.data.repository.core.EntityInformation;
@@ -16,31 +18,33 @@ import org.springframework.util.Assert;
  */
 public class MybatisRepositoryFactory extends RepositoryFactorySupport {
 
-    private final RelationalMappingContext context;
-    private final SqlSessionFactory sqlSessionFactory;
+    private final RelationalMappingContext mappingContext;
+    private final Dialect dialect;
+    private final SqlSessionTemplate sqlSessionTemplate;
 
     /**
      * Creates a new {@link MybatisRepositoryFactory} for the given
      * {@link RelationalMappingContext} and {@link SqlSessionFactory}
      *
-     * @param context must not be {@literal null}.
-     * @param sqlSessionFactory must not be {@literal null}.
+     * @param mappingContext must not be {@literal null}.
+     * @param dialect must not be {@literal null}.
+     * @param sqlSessionTemplate must not be {@literal null}.
      */
-    public MybatisRepositoryFactory(RelationalMappingContext context, SqlSessionFactory sqlSessionFactory) {
+    public MybatisRepositoryFactory(RelationalMappingContext mappingContext, Dialect dialect, SqlSessionTemplate sqlSessionTemplate) {
 
-        Assert.notNull(context, "RelationalMappingContext must not be null!");
-        Assert.notNull(sqlSessionFactory, "SqlSessionFactory must not be null!");
+        Assert.notNull(mappingContext, "RelationalMappingContext must not be null!");
+        Assert.notNull(dialect, "Dialect must not be null!");
+        Assert.notNull(sqlSessionTemplate, "SqlSessionTemplate must not be null!");
 
-        this.context = context;
-        this.sqlSessionFactory = sqlSessionFactory;
+        this.mappingContext = mappingContext;
+        this.dialect = dialect;
+        this.sqlSessionTemplate = sqlSessionTemplate;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <T, ID> EntityInformation<T, ID> getEntityInformation(Class<T> aClass) {
-
-        RelationalPersistentEntity<?> entity = context.getRequiredPersistentEntity(aClass);
-
+        RelationalPersistentEntity<?> entity = mappingContext.getRequiredPersistentEntity(aClass);
         return (EntityInformation<T, ID>) new PersistentEntityInformation<>(entity);
     }
 
@@ -50,18 +54,11 @@ public class MybatisRepositoryFactory extends RepositoryFactorySupport {
      */
     @Override
     protected Object getTargetRepository(RepositoryInformation repositoryInformation) {
-        Class<?> mapperClass = repositoryInformation.getRepositoryInterface();
-        org.apache.ibatis.session.Configuration config = sqlSessionFactory.getConfiguration();
-        MybatisRepositoryConfigurer.configure(config, mapperClass, repositoryInformation.getDomainType());
+        Class<?> domainType = repositoryInformation.getDomainType();
+        Class<?> repositoryType = repositoryInformation.getRepositoryInterface();
         
-        MapperFactoryBean<?> mapperFactoryBean = new MapperFactoryBean<>(mapperClass);
-        mapperFactoryBean.setSqlSessionFactory(sqlSessionFactory);
-        mapperFactoryBean.afterPropertiesSet();
-        try {
-            return mapperFactoryBean.getObject();
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
+        Statements.configure(sqlSessionTemplate.getConfiguration(), repositoryType, domainType, mappingContext, dialect);
+        return new SimpleMybatisRepository<>(sqlSessionTemplate, repositoryType);
     }
     
     /*

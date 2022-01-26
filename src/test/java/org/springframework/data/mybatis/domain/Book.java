@@ -2,9 +2,9 @@ package org.springframework.data.mybatis.domain;
 
 import java.util.Date;
 
-import javax.persistence.Table;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Table(name = "lib_book")
+@Table("lib_book")
 public class Book extends IntId {
     
     private String name;

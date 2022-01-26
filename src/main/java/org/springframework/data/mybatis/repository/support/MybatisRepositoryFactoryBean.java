@@ -2,9 +2,10 @@ package org.springframework.data.mybatis.repository.support;
 
 import java.io.Serializable;
 
-import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.data.relational.core.dialect.Dialect;
 import org.springframework.data.relational.core.mapping.RelationalMappingContext;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
@@ -19,7 +20,8 @@ public class MybatisRepositoryFactoryBean<T extends Repository<S, ID>, S, ID ext
         extends TransactionalRepositoryFactoryBeanSupport<T, S, ID> implements ApplicationEventPublisherAware {
 
     private RelationalMappingContext mappingContext;
-    private SqlSessionFactory sqlSessionFactory;
+    private Dialect dialect;
+    private SqlSessionTemplate sqlSessionTemplate;
 
     /**
      * Creates a new {@link MybatisRepositoryFactoryBean} for the given repository interface.
@@ -36,7 +38,7 @@ public class MybatisRepositoryFactoryBean<T extends Repository<S, ID>, S, ID ext
     @Override
     protected RepositoryFactorySupport doCreateRepositoryFactory() {
 
-        return new MybatisRepositoryFactory(mappingContext, sqlSessionFactory);
+        return new MybatisRepositoryFactory(mappingContext, dialect, sqlSessionTemplate);
     }
 
     @Autowired
@@ -49,11 +51,19 @@ public class MybatisRepositoryFactoryBean<T extends Repository<S, ID>, S, ID ext
     }
     
     @Autowired
-    protected void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+    protected void setDialect(Dialect dialect) {
 
-        Assert.notNull(sqlSessionFactory, "SqlSessionFactory must not be null");
+        Assert.notNull(dialect, "Dialect must not be null");
 
-        this.sqlSessionFactory = sqlSessionFactory;
+        this.dialect = dialect;
+    }
+    
+    @Autowired
+    protected void setSqlSessionTemplate(SqlSessionTemplate sqlSessionTemplate) {
+
+        Assert.notNull(sqlSessionTemplate, "SqlSessionTemplate must not be null");
+
+        this.sqlSessionTemplate = sqlSessionTemplate;
     }
 
 }

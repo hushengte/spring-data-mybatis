@@ -48,9 +48,9 @@ public class PublisherDaoTest {
         assertEquals(entity.getName(), updated.getName());
         assertEquals(entity.getPlace(), updated.getPlace());
         
-        assertTrue(publisherDao.existsById(updated.getId()));
-        
         publisherDao.delete(entity);
+        assertTrue(!publisherDao.existsById(entity.getId()));
+        
         assertEquals(7L, publisherDao.count());
     }
     

@@ -1,8 +1,8 @@
 package org.springframework.data.mybatis.domain;
 
-import javax.persistence.Table;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Table(name = "lib_publisher")
+@Table("lib_publisher")
 public class Publisher extends IntId {
 	
     private String name;
