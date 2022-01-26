@@ -1,7 +1,10 @@
 package org.springframework.data.mybatis.repository.support;
 
+import java.util.Optional;
+
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.data.mybatis.repository.query.MybatisQueryLookupStrategy;
 import org.springframework.data.mybatis.statement.Statements;
 import org.springframework.data.relational.core.dialect.Dialect;
 import org.springframework.data.relational.core.mapping.RelationalMappingContext;
@@ -11,6 +14,9 @@ import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.PersistentEntityInformation;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
+import org.springframework.data.repository.query.QueryLookupStrategy;
+import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -70,6 +76,17 @@ public class MybatisRepositoryFactory extends RepositoryFactorySupport {
         // here we return repository interface other than MybatisRepository, 
         // because we want all method delegate to mybatis MapperProxy
         return repositoryMetadata.getRepositoryInterface();
+    }
+    
+    /*
+     * (non-Javadoc)
+     * @see org.springframework.data.repository.core.support.RepositoryFactorySupport#getQueryLookupStrategy(org.springframework.data.repository.query.QueryLookupStrategy.Key, 
+     * org.springframework.data.repository.query.EvaluationContextProvider)
+     */
+    @Override
+    protected Optional<QueryLookupStrategy> getQueryLookupStrategy(@Nullable QueryLookupStrategy.Key key,
+            QueryMethodEvaluationContextProvider evaluationContextProvider) {
+        return Optional.of(new MybatisQueryLookupStrategy(sqlSessionTemplate));
     }
 
 }
