@@ -70,10 +70,7 @@ public class Statements {
                 new DeleteAll()
                 );
         defaultStatements.forEach(statement -> {
-            MappedStatement ms = statement.create(config, namespace, renderContext, tableInfo);
-            if (!config.hasStatement(ms.getId(), false)) {
-                config.addMappedStatement(ms);
-            }
+            statement.configure(config, namespace, renderContext, tableInfo);
         });
     }
     

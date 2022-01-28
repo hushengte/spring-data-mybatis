@@ -55,15 +55,18 @@ public abstract class AbstractStatement implements Statement {
     }
     
     /**
-     * Create a {@link MappedStatement}.
-     * @param config mybatis config
+     * Configure a {@link MappedStatement}, if it already exists, then just return it.
+     * @param config mybatis configuration
      * @param namespace namespace for repository
      * @param renderContext sql render contenxt
      * @param tableInfo table info
      * @return {@link MappedStatement}
      */
-    public MappedStatement create(Configuration config, String namespace, RenderContext renderContext, TableInfo tableInfo) {
+    public MappedStatement configure(Configuration config, String namespace, RenderContext renderContext, TableInfo tableInfo) {
         String id = statementId(namespace);
+        if (config.hasStatement(id, false)) {
+            return config.getMappedStatement(id);
+        }
         String sqlScript = renderSql(renderContext, tableInfo);
         if (logger.isDebugEnabled()) {
             logger.debug("Rendered SQL: {}", sqlScript);
@@ -71,7 +74,9 @@ public abstract class AbstractStatement implements Statement {
         SqlSource sqlSource = createSqlSource(config, sqlScript);
         MappedStatement.Builder builder = new MappedStatement.Builder(config, id, sqlSource, this.getType());
         configureBuilder(config, namespace, builder);
-        return builder.build();
+        MappedStatement ms = builder.build();
+        config.addMappedStatement(ms);
+        return ms;
     }
     
     protected String statementId(String namespace) {
