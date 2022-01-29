@@ -3,7 +3,6 @@ package org.springframework.data.mybatis.statement.page;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.ibatis.builder.StaticSqlSource;
 import org.apache.ibatis.mapping.MappedStatement.Builder;
@@ -18,6 +17,7 @@ import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.mybatis.repository.query.PageableInteceptor;
 import org.springframework.data.mybatis.statement.AbstractStatement;
 import org.springframework.data.mybatis.statement.TableInfo;
+import org.springframework.data.relational.core.dialect.Dialect;
 import org.springframework.data.relational.core.sql.render.RenderContext;
 import org.springframework.util.StringUtils;
 
@@ -28,30 +28,30 @@ import org.springframework.util.StringUtils;
  */
 public class OrderByAndLimit extends AbstractStatement {
     
-    private static final String PARAM_KEY_OFFSET = "offset";
-    private static final String PARAM_KEY_SIZE = "size";
+    public static final String PARAM_KEY_OFFSET = "offset";
+    public static final String PARAM_KEY_SIZE = "size";
     
     private final String originalStatementId;
     private final String originalSql;
-    private final Map<String, Object> originalParameters;
     private final List<ParameterMapping> parameterMappings;
     private final List<ResultMap> resultMaps;
     private final Pageable pageable;
+    private final Dialect dialect;
     
-    public OrderByAndLimit(String originalStatementId, String originalSql, Map<String, Object> originalParameters, 
+    public OrderByAndLimit(String originalStatementId, String originalSql, 
             List<ParameterMapping> parameterMappings, List<ResultMap> resultMaps,
-            Pageable pageable) {
-        super(statementName(originalSql, pageable), SqlCommandType.SELECT);
+            Pageable pageable, Dialect dialect) {
+        super(statementName(originalSql), SqlCommandType.SELECT);
         this.originalStatementId = originalStatementId;
         this.originalSql = originalSql;
-        this.originalParameters = originalParameters;
         this.parameterMappings = parameterMappings;
         this.resultMaps = resultMaps;
         this.pageable = pageable;
+        this.dialect = dialect;
     }
     
-    private static String statementName(String originalSql, Pageable pageable) {
-        return String.valueOf(originalSql.hashCode()) + "-" + String.valueOf(pageable.hashCode());
+    private static String statementName(String originalSql) {
+        return String.valueOf(originalSql.hashCode());
     }
 
     @Override
@@ -71,7 +71,8 @@ public class OrderByAndLimit extends AbstractStatement {
         if (sortFragment.length() > 0) {
             sqlBuf.append(" ORDER BY ").append(sortFragment);
         }
-        sqlBuf.append(" LIMIT ?,?");
+        String zeroLimit = dialect.limit().getLimitOffset(0, 0);
+        sqlBuf.append(" ").append(zeroLimit.replace("0", "?"));
         return sqlBuf.toString();
     }
 
@@ -97,9 +98,6 @@ public class OrderByAndLimit extends AbstractStatement {
     
     @Override
     protected SqlSource createSqlSource(Configuration config, String sqlScript) {
-        originalParameters.put(PARAM_KEY_OFFSET, (int)pageable.getOffset());
-        originalParameters.put(PARAM_KEY_SIZE, pageable.getPageSize());
-        
         List<ParameterMapping> finalParameterMappings = new ArrayList<>();
         finalParameterMappings.addAll(this.parameterMappings);
         finalParameterMappings.add(new ParameterMapping.Builder(config, PARAM_KEY_OFFSET, int.class).build());

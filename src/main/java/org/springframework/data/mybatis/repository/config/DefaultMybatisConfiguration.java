@@ -21,11 +21,31 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class DefaultMybatisConfiguration {
 
     @Bean
-    public org.apache.ibatis.session.Configuration mybatisConfiguration() {
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
+    
+    @Bean
+    public Dialect sqlDialect(JdbcTemplate jdbcTemplate) {
+        return getDialect(jdbcTemplate);
+    }
+    
+    /**
+     * Override this method to provide proper sql dialect.
+     * 
+     * @param jdbcTemplate not null
+     * @return Implementation of {@link Dialect}
+     */
+    protected Dialect getDialect(JdbcTemplate jdbcTemplate) {
+        return MySqlDialect.INSTANCE;
+    }
+    
+    @Bean
+    public org.apache.ibatis.session.Configuration mybatisConfiguration(Dialect sqlDialect) {
         org.apache.ibatis.session.Configuration config = new org.apache.ibatis.session.Configuration();
         config.setMapUnderscoreToCamelCase(true);
         config.setAutoMappingBehavior(AutoMappingBehavior.PARTIAL);
-        config.addInterceptor(new PageableInteceptor());
+        config.addInterceptor(new PageableInteceptor(sqlDialect));
         return config;
     }
     
@@ -46,26 +66,6 @@ public class DefaultMybatisConfiguration {
     @Bean
     public RelationalMappingContext mappingContext() {
         return new RelationalMappingContext();
-    }
-    
-    @Bean
-    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
-    }
-    
-    @Bean
-    public Dialect sqlDialect(JdbcTemplate jdbcTemplate) {
-        return getDialect(jdbcTemplate);
-    }
-    
-    /**
-     * Override this method to provide proper sql dialect.
-     * 
-     * @param jdbcTemplate not null
-     * @return Implementation of {@link Dialect}
-     */
-    protected Dialect getDialect(JdbcTemplate jdbcTemplate) {
-        return MySqlDialect.INSTANCE;
     }
     
 }

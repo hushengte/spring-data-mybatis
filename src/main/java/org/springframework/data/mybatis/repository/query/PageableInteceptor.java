@@ -19,6 +19,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mybatis.statement.page.Count;
 import org.springframework.data.mybatis.statement.page.OrderByAndLimit;
+import org.springframework.data.relational.core.dialect.Dialect;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 @Intercepts(@Signature(type = Executor.class, method = "query", args = {
@@ -26,7 +28,12 @@ import org.springframework.util.CollectionUtils;
 }))
 public class PageableInteceptor implements Interceptor {
     
-    public PageableInteceptor() {}
+    private final Dialect dialect;
+    
+    public PageableInteceptor(Dialect dialect) {
+        Assert.notNull(dialect, "Dialect must not be null.");
+        this.dialect = dialect;
+    }
     
     private static Pageable findPageable(Object parameterObject, boolean isMap) {
         if (parameterObject != null) {
@@ -78,9 +85,13 @@ public class PageableInteceptor implements Interceptor {
         
         List<?> content = Collections.emptyList();
         if (total > 0) {
+            // add pageable parameters
+            queryParams.put(OrderByAndLimit.PARAM_KEY_OFFSET, (int)pageable.getOffset());
+            queryParams.put(OrderByAndLimit.PARAM_KEY_SIZE, pageable.getPageSize());
+            
             // configure the pageable statement and get the result rows
-            args[0] = new OrderByAndLimit(ms.getId(), originalSql, queryParams,
-                    boundSql.getParameterMappings(), ms.getResultMaps(), pageable)
+            args[0] = new OrderByAndLimit(ms.getId(), originalSql,
+                    boundSql.getParameterMappings(), ms.getResultMaps(), pageable, dialect)
                     .configure(configuration, null, null, null);
             args[1] = queryParams;
             content = (List<?>) invocation.proceed();
