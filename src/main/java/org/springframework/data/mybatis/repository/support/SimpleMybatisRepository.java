@@ -183,6 +183,15 @@ public class SimpleMybatisRepository<T extends Persistable<?>, ID> implements My
     }
 
     @Override
+    @Transactional
+    public int deleteByIds(Iterable<ID> ids) {
+        if (ids == null || !ids.iterator().hasNext()) {
+            return 0;
+        }
+        return sqlSessionTemplate.delete(namespace(Statement.DELETE_BY_IDS), ids);
+    }
+    
+    @Override
     public ID lockById(ID id, LockMode lockMode) {
         Assert.notNull(id, "The given id must not be null.");
         
