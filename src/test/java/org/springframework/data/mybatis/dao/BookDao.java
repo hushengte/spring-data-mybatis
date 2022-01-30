@@ -13,7 +13,6 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mybatis.domain.Book;
 import org.springframework.data.mybatis.repository.MybatisRepository;
 import org.springframework.data.mybatis.repository.Query;
-import org.springframework.data.mybatis.statement.Statement;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface BookDao extends MybatisRepository<Book, Integer> {
@@ -22,7 +21,7 @@ public interface BookDao extends MybatisRepository<Book, Integer> {
     @Select("select b.id, b.name, b.author, b.isbn, b.call_number, b.publish_year, b.serial_name, b.ebook, b.publisher_id,"
             + " p.name as publisher_name, p.place as publisher_place from lib_book b"
             + " left join lib_publisher p on b.publisher_id = p.id where b.id = #{id}")
-    @ResultMap(Statement.RESULTMAP_DEFAULT)
+    @ResultMap(DEFAULT_RESULTMAP)
 	Book getById(@Param("id") Integer id);
     
     @Query
@@ -50,13 +49,13 @@ public interface BookDao extends MybatisRepository<Book, Integer> {
     @Query
     @Select("select o.*, p.name as publisher_name, p.place as publisher_place from lib_book o"
             + " left join lib_publisher p on o.publisher_id = p.id")
-    @ResultMap(Statement.RESULTMAP_DEFAULT)
+    @ResultMap(DEFAULT_RESULTMAP)
     Page<Book> findWithPageableFetchPublisher(Pageable pageable);
     
     @Query
     @Select("select o.*, p.name as publisher_name, p.place as publisher_place from lib_book o"
             + " left join lib_publisher p on o.publisher_id = p.id where o.isbn like concat('%',#{keyword},'%')")
-    @ResultMap(Statement.RESULTMAP_DEFAULT)
+    @ResultMap(DEFAULT_RESULTMAP)
     Page<Book> findByIsbnLikeWithPageableFetchPublisher(@Param("keyword") String keyword, Pageable pageable);
 
 }

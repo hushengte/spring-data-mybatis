@@ -30,7 +30,7 @@ class DeleteByIds extends AbstractStatement {
                 .from(table)
                 .where(idColumn.in(forEachIdsBindMarker()))
                 .build();
-        return scriptTag(SqlRenderer.create(renderContext).render(delete));
+        return Statement.scriptTag(SqlRenderer.create(renderContext).render(delete));
     }
     
     @Override

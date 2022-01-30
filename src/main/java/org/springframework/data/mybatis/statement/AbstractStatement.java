@@ -13,6 +13,7 @@ import org.apache.ibatis.scripting.xmltags.TextSqlNode;
 import org.apache.ibatis.session.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.mybatis.repository.MybatisRepository;
 import org.springframework.data.relational.core.sql.BindMarker;
 import org.springframework.data.relational.core.sql.SQL;
 import org.springframework.data.relational.core.sql.SqlIdentifier;
@@ -97,7 +98,7 @@ public abstract class AbstractStatement implements Statement {
     
     protected void configureBuilder(Configuration config, String namespace, MappedStatement.Builder builder) {
         if (SqlCommandType.SELECT.equals(this.getType())) {
-            String resultMapId = namespace + DOT + RESULTMAP_DEFAULT;
+            String resultMapId = namespace + DOT + MybatisRepository.DEFAULT_RESULTMAP;
             ResultMap resultMap = config.getResultMap(resultMapId);
             if (resultMap != null) {
                 builder.resultMaps(Collections.singletonList(config.getResultMap(resultMapId)));
@@ -108,11 +109,11 @@ public abstract class AbstractStatement implements Statement {
     protected BindMarker getBindMarker(SqlIdentifier columnName) {
         String referenceName = columnName.getReference();
         String paramName = NON_VISIBLE_CHAR_PATTERN.matcher(referenceName).replaceAll("");
-        return SQL.bindMarker(marker(paramName));
+        return SQL.bindMarker(Statement.marker(paramName));
     }
     
     protected BindMarker forEachIdsBindMarker() {
-        return SQL.bindMarker(forEachCommaScript("list", "id"));
+        return SQL.bindMarker(Statement.forEachCommaScript("list", "id"));
     }
 
     public static ResultMap basicTypeResultMap(Configuration config, Class<?> basicType) {

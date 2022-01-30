@@ -28,8 +28,6 @@ public interface Statement {
     String DOT = ".";
     String COMMA = ",";
     
-    String RESULTMAP_DEFAULT = "resultMap[default]";
-    
     String SCRIPT_BEGIN = "<script>";
     String SCRIPT_END = "</script>";
     
@@ -38,7 +36,7 @@ public interface Statement {
      * @param paramName parameter Name
      * @return parameter marker
      */
-    default String marker(String paramName) {
+    static String marker(String paramName) {
         return new StringBuilder("#{").append(paramName).append("}").toString();
     }
     
@@ -47,7 +45,7 @@ public interface Statement {
      * @param sqlText sql statement to tag
      * @return mybatis statement script
      */
-    default String scriptTag(String sqlText) {
+    static String scriptTag(String sqlText) {
         return new StringBuilder(SCRIPT_BEGIN)
                 .append(sqlText).append(SCRIPT_END).toString();
     }
@@ -61,7 +59,7 @@ public interface Statement {
      * @param close ending chars
      * @return foreach script
      */
-    default String forEachScript(String collectionName, String itemName, String separator, 
+    static String forEachScript(String collectionName, String itemName, String separator, 
             String open, String close) {
         StringBuilder script = new StringBuilder("<foreach collection='")
                 .append(collectionName)
@@ -83,7 +81,7 @@ public interface Statement {
      * @param itemName item name
      * @return comma separated foreach script
      */
-    default String forEachCommaScript(String collectionName, String itemName) {
+    static String forEachCommaScript(String collectionName, String itemName) {
         return forEachScript(collectionName, itemName, COMMA, null, null);
     }
     

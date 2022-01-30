@@ -33,6 +33,23 @@ import org.springframework.data.relational.core.sql.render.RenderContext;
 public class Statements {
     
     private static final Logger logger = LoggerFactory.getLogger(Statements.class);
+    
+    private static final List<AbstractStatement> DEFAULT_STATEMENTS = Arrays.asList(
+            new org.springframework.data.mybatis.statement.Insert(),
+            new UpdateById(),
+            
+            new FindById(),
+            new CountById(),
+            new CountAll(),
+            new FindAll(),
+            new FindByIds(),
+            new ReadLockById(),
+            new WriteLockById(),
+            
+            new DeleteById(),
+            new DeleteByIds(),
+            new DeleteAll()
+            );
 
     /**
      * Configure default {@link ResultMap}s and {@link MappedStatement}s for mybatis.
@@ -53,31 +70,16 @@ public class Statements {
         
         TableInfo tableInfo = TableInfo.create(mappingContext, domainType, config.isMapUnderscoreToCamelCase());
         RenderContext renderContext = new RenderContextFactory(dialect).createRenderContext();
-        List<AbstractStatement> defaultStatements = Arrays.asList(
-                new org.springframework.data.mybatis.statement.Insert(),
-                new UpdateById(),
-                
-                new FindById(),
-                new CountById(),
-                new CountAll(),
-                new FindAll(),
-                new FindByIds(),
-                new ReadLockById(),
-                new WriteLockById(),
-                
-                new DeleteById(),
-                new DeleteByIds(),
-                new DeleteAll()
-                );
-        defaultStatements.forEach(statement -> {
+        
+        DEFAULT_STATEMENTS.forEach(statement -> {
             statement.configure(config, namespace, renderContext, tableInfo);
         });
     }
     
     public static void configureDefaultResultMap(org.apache.ibatis.session.Configuration config, String namespace, 
             RelationalMappingContext mappingContext, Class<?> domainType) {
-        String nestedResultMapIdPrefix = Statement.DOT + Statement.RESULTMAP_DEFAULT;
-        String defaultResultMapId = namespace + Statement.DOT + Statement.RESULTMAP_DEFAULT;
+        String nestedResultMapIdPrefix = Statement.DOT + MybatisRepository.DEFAULT_RESULTMAP;
+        String defaultResultMapId = namespace + Statement.DOT + MybatisRepository.DEFAULT_RESULTMAP;
         buildDefaultResultMap(config, namespace, defaultResultMapId, nestedResultMapIdPrefix, mappingContext, domainType, new ArrayDeque<>());
     }
     

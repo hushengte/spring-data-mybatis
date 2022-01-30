@@ -32,7 +32,7 @@ class FindByIds extends AbstractStatement {
                 .from(table)
                 .where(idColumn.in(forEachIdsBindMarker()))
                 .build();
-        return scriptTag(SqlRenderer.create(renderContext).render(select));
+        return Statement.scriptTag(SqlRenderer.create(renderContext).render(select));
     }
 
     @Override
