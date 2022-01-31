@@ -2,10 +2,12 @@ package org.springframework.data.mybatis.statement;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +28,7 @@ public class TableInfo {
     private final Table aliasedTable;
     private SqlIdentifier idColumnName;
     private final List<SqlIdentifier> columnNames = new ArrayList<>();
+    private final Map<SqlIdentifier, String> columnNamesToPropertyNamesMap = new HashMap<>();
     private final List<SqlIdentifier> nonIdColumnNames = new ArrayList<>();
     private final Set<SqlIdentifier> readOnlyColumnNames = new HashSet<>();
     private Set<SqlIdentifier> insertableColumns;
@@ -74,12 +77,10 @@ public class TableInfo {
                 RelationalPersistentEntity<?> propertyEntity = mappingContext.getPersistentEntity(property.getActualType());
                 RelationalPersistentProperty propertyEntityId = propertyEntity.getIdProperty();
                 if (propertyEntityId != null) {
-                    String propertyColumn = underscoreColumn ? underscoreName(property.getName()) : property.getName();
-                    String prefix = propertyColumn + "_";
-                    initSimpleColumnName(info, propertyEntityId, prefix);
+                    mappingProperty(info, propertyEntityId, property.getName(), underscoreColumn);
                 }
             } else {
-                initSimpleColumnName(info, property, "");
+                mappingProperty(info, property, null, underscoreColumn);
             }
         });
         
@@ -96,12 +97,20 @@ public class TableInfo {
         return info;
     }
 
-    private static void initSimpleColumnName(TableInfo tableInfo, RelationalPersistentProperty property, String prefix) {
-        SqlIdentifier columnName = property.getColumnName().transform(prefix::concat);
-        
+    private static void mappingProperty(TableInfo tableInfo, RelationalPersistentProperty property, 
+            String ownerPropertyName, boolean underscoreColumn) {
+        SqlIdentifier columnName = property.getColumnName();
+        String mappedPropertyName = property.getName();
         if (property.getOwner().isIdProperty(property)) {
-            if (StringUtils.hasText(prefix)) {
+            if (StringUtils.hasText(ownerPropertyName)) {
+                if (underscoreColumn) {
+                    String columnPrefix = underscoreName(ownerPropertyName) + "_";
+                    columnName = columnName.transform(columnPrefix::concat);
+                } else {
+                    columnName.transform(StringUtils::capitalize).transform(ownerPropertyName::concat);
+                }
                 tableInfo.nonIdColumnNames.add(columnName);
+                mappedPropertyName = ownerPropertyName + "." + mappedPropertyName;
             } else {
                 tableInfo.idColumnName = columnName;
             }
@@ -111,6 +120,7 @@ public class TableInfo {
         if (!property.isWritable()) {
             tableInfo.readOnlyColumnNames.add(columnName);
         }
+        tableInfo.columnNamesToPropertyNamesMap.put(columnName, mappedPropertyName);
     }
 
     public Table getTable() {
@@ -159,6 +169,10 @@ public class TableInfo {
 
     public Set<SqlIdentifier> getUpdateableColumns() {
         return updateableColumns;
+    }
+    
+    public String getMappedPropertyName(SqlIdentifier columnName) {
+        return columnNamesToPropertyNamesMap.get(columnName);
     }
     
 }

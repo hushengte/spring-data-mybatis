@@ -6,7 +6,9 @@ import java.util.stream.Collectors;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.springframework.data.relational.core.sql.AssignValue;
 import org.springframework.data.relational.core.sql.Assignments;
+import org.springframework.data.relational.core.sql.BindMarker;
 import org.springframework.data.relational.core.sql.Column;
+import org.springframework.data.relational.core.sql.SQL;
 import org.springframework.data.relational.core.sql.Table;
 import org.springframework.data.relational.core.sql.Update;
 import org.springframework.data.relational.core.sql.render.RenderContext;
@@ -29,7 +31,9 @@ class UpdateById extends AbstractStatement {
         Column idColumn = table.column(tableInfo.getIdColumnName());
         List<AssignValue> assignments = tableInfo.getUpdateableColumns().stream()
                 .map(columnName -> {
-                    return Assignments.value(table.column(columnName), getBindMarker(columnName));
+                    String mappedPropertyName = tableInfo.getMappedPropertyName(columnName);
+                    BindMarker bindMarker = SQL.bindMarker(Statement.marker(mappedPropertyName));
+                    return Assignments.value(table.column(columnName), bindMarker);
                 }).collect(Collectors.toList());
         Update update = Update.builder()
                 .table(table)

@@ -10,6 +10,7 @@ import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.session.Configuration;
 import org.springframework.data.relational.core.sql.BindMarker;
 import org.springframework.data.relational.core.sql.Column;
+import org.springframework.data.relational.core.sql.SQL;
 import org.springframework.data.relational.core.sql.SqlIdentifier;
 import org.springframework.data.relational.core.sql.Table;
 import org.springframework.data.relational.core.sql.render.RenderContext;
@@ -38,7 +39,8 @@ class Insert extends AbstractStatement {
                 }).collect(Collectors.toList());
         List<BindMarker> markers = insertableColumns.stream()
                 .map(columnName -> {
-                    return getBindMarker(columnName);
+                    String mappedPropertyName = tableInfo.getMappedPropertyName(columnName);
+                    return SQL.bindMarker(Statement.marker(mappedPropertyName));
                 }).collect(Collectors.toList());
         return SqlRenderer.create(renderContext)
                 .render(org.springframework.data.relational.core.sql.Insert.builder()
