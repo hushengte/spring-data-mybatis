@@ -12,7 +12,6 @@ import org.springframework.data.mybatis.repository.query.PageableInteceptor;
 import org.springframework.data.relational.core.dialect.Dialect;
 import org.springframework.data.relational.core.dialect.MySqlDialect;
 import org.springframework.data.relational.core.mapping.RelationalMappingContext;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Beans that must be registered for Spring Data Mybatis to work.
@@ -21,22 +20,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class DefaultMybatisConfiguration {
 
     @Bean
-    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
-    }
-    
-    @Bean
-    public Dialect sqlDialect(JdbcTemplate jdbcTemplate) {
-        return getDialect(jdbcTemplate);
+    public Dialect sqlDialect(DataSource dataSource) {
+        return getDialect(dataSource);
     }
     
     /**
      * Override this method to provide proper sql dialect.
      * 
-     * @param jdbcTemplate not null
+     * @param dataSource not null
      * @return Implementation of {@link Dialect}
      */
-    protected Dialect getDialect(JdbcTemplate jdbcTemplate) {
+    protected Dialect getDialect(DataSource dataSource) {
         return MySqlDialect.INSTANCE;
     }
     
