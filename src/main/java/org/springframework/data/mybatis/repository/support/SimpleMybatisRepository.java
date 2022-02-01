@@ -160,6 +160,19 @@ public class SimpleMybatisRepository<T extends Persistable<?>, ID> implements My
             deleteById(instance.getId());
         }
     }
+    
+    /*
+     * (non-Javadoc)
+     * @see org.springframework.data.repository.CrudRepository#deleteAllById(java.lang.Iterable)
+     */
+    @Override
+    @Transactional
+    public void deleteAllById(Iterable<? extends ID> ids) {
+        if (ids == null || !ids.iterator().hasNext()) {
+            return;
+        }
+        sqlSessionTemplate.delete(namespace(Statement.DELETE_BY_IDS), ids);
+    }
 
     /*
      * (non-Javadoc)
@@ -182,15 +195,6 @@ public class SimpleMybatisRepository<T extends Persistable<?>, ID> implements My
         sqlSessionTemplate.delete(namespace(Statement.DELETE_ALL));
     }
 
-    @Override
-    @Transactional
-    public int deleteByIds(Iterable<ID> ids) {
-        if (ids == null || !ids.iterator().hasNext()) {
-            return 0;
-        }
-        return sqlSessionTemplate.delete(namespace(Statement.DELETE_BY_IDS), ids);
-    }
-    
     @Override
     public ID lockById(ID id, LockMode lockMode) {
         Assert.notNull(id, "The given id must not be null.");

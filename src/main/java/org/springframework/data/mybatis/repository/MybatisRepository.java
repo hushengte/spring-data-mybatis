@@ -47,15 +47,6 @@ public interface MybatisRepository<T, ID> extends PagingAndSortingRepository<T, 
     List<T> findAll(Sort sort);
     
     /**
-     * Deletes the entity with the given IDs.
-     *
-     * @param ids must not be empty.
-     * @throws IllegalArgumentException in case the given {@literal ids} is empty.
-     * @return updated rows
-     */
-    int deleteByIds(Iterable<ID> ids);
-    
-    /**
      * Acquire database lock with the given id.
      * 
      * @param id identifier of entity

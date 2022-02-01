@@ -18,7 +18,7 @@ public class MybatisQueryMethod extends QueryMethod {
         this.method = method;
     }
 
-    public Method getMethod() {
+    Method getPlainMethod() {
         return method;
     }
 

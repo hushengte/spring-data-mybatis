@@ -25,7 +25,7 @@ public class MapperProxyBasedQuery extends AbstractMybatisQuery {
 
     @Override
     public Object execute(Object[] parameters) {
-        Method method = getQueryMethod().getMethod();
+        Method method = getQueryMethod().getPlainMethod();
         return ReflectionUtils.invokeMethod(method, mapperProxyTarget, parameters);
     }
 
