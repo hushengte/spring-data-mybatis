@@ -48,7 +48,7 @@ public class Count extends AbstractStatement {
      */
     @Override
     public String renderSql(RenderContext renderContext, TableInfo tableInfo) {
-        return new StringBuilder("SELECT COUNT(*) FROM (").append(originalSql).append(")").toString();
+        return new StringBuilder("SELECT COUNT(*) FROM (").append(originalSql).append(") total").toString();
     }
 
     @Override
