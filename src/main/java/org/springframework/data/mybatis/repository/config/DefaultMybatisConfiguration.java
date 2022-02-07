@@ -40,7 +40,16 @@ public class DefaultMybatisConfiguration {
         config.setMapUnderscoreToCamelCase(true);
         config.setAutoMappingBehavior(AutoMappingBehavior.PARTIAL);
         config.addInterceptor(new PageableInteceptor(sqlDialect));
+        configureMybatis(config);
         return config;
+    }
+    
+    /**
+     * Override this method to customize mybatis configuration.
+     * 
+     * @param config mybatis configuration
+     */
+    protected void configureMybatis(org.apache.ibatis.session.Configuration config) {
     }
     
     @Bean
