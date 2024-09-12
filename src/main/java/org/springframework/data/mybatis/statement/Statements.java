@@ -35,7 +35,8 @@ public class Statements {
     private static final Logger logger = LoggerFactory.getLogger(Statements.class);
     
     private static final List<AbstractStatement> DEFAULT_STATEMENTS = Arrays.asList(
-            new org.springframework.data.mybatis.statement.Insert(),
+            new org.springframework.data.mybatis.statement.Insert(false),
+            new org.springframework.data.mybatis.statement.Insert(true),
             new UpdateById(),
             
             new FindById(),

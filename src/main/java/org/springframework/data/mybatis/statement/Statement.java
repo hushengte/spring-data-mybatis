@@ -11,6 +11,7 @@ package org.springframework.data.mybatis.statement;
 public interface Statement {
 
     String INSERT = "insert";
+    String INSERT_WITH_ID = "insertWithId";
     String UPDATE_BY_ID = "updateById";
     
     String COUNT_BY_ID = "countById";

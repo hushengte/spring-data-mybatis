@@ -46,7 +46,8 @@ public class SimpleMybatisRepository<T extends Persistable<?>, ID> implements My
     public <S extends T> S save(S instance) {
         Assert.notNull(instance, "The given instance must not be null.");
         if (instance.isNew()) {
-            sqlSessionTemplate.insert(namespace(Statement.INSERT), instance);
+        	String statementKey = instance.getId() != null ? Statement.INSERT_WITH_ID : Statement.INSERT;
+            sqlSessionTemplate.insert(namespace(statementKey), instance);
         } else {
             sqlSessionTemplate.update(namespace(Statement.UPDATE_BY_ID), instance);
         }
